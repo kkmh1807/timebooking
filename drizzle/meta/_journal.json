@@ -1,0 +1,13 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1793194367455,
+      "tag": "0000_lesson_booking",
+      "breakpoints": true
+    }
+  ]
+}
