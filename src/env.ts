@@ -22,5 +22,9 @@ export const variables = defineEnvVars({
 	ADMIN_EMAIL: {
 		description: 'Optional address that receives a copy of each booking.',
 		schema: optional
+	},
+	DATABASE_AUTH_TOKEN: {
+		description: 'Turso database token. Leave empty for a local file database.',
+		schema: optional
 	}
 });
