@@ -27,7 +27,7 @@ export async function sendBookingEmails(booking: BookingMail) {
 	if (booking.label) customerLines.push(`Stil / instruktør: ${booking.label}`);
 	customerLines.push(
 		'',
-		studio.paymentNote,
+		studio.kicker,
 		'Trenger du å avbestille, tar du kontakt med studioet.',
 		'',
 		'Vennlig hilsen',

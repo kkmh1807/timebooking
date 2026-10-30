@@ -11,7 +11,6 @@
 		isDateKey,
 		isTime,
 		nextClock,
-		normalizeClock,
 		zonedTimeToUtc
 	} from '#lib/time';
 	import type { PageProps } from './$types';
@@ -32,12 +31,6 @@
 		isDateKey(date) &&
 			starts.some((start) => isTime(start) && zonedTimeToUtc(date, start).getTime() <= Date.now())
 	);
-
-	function commitClock(index: number, input: HTMLInputElement) {
-		const next = normalizeClock(input.value);
-		if (input.value !== next) input.value = next;
-		if (starts[index] !== next) starts[index] = next;
-	}
 
 	function setCount(next: number) {
 		if (!Number.isInteger(next) || next < 1 || next > MAX_CLASSES || next === starts.length) return;
@@ -69,17 +62,7 @@
 	<p class="error">{form.message}</p>
 {/if}
 
-<form
-		method="POST"
-		action="?/create"
-		onsubmit={(event) => {
-			const fields = event.currentTarget.querySelectorAll('input[name="start"]');
-			for (let index = 0; index < fields.length; index += 1) {
-				const field = fields[index];
-				if (field instanceof HTMLInputElement) commitClock(index, field);
-			}
-		}}
-	>
+<form method="POST" action="?/create">
 	<label class="field">
 		<span>Dato</span>
 		<input type="date" name="date" required bind:value={date} />
@@ -109,25 +92,12 @@
 				<label>
 					<span>Time {index + 1}</span>
 					<input
-						type="text"
+						type="time"
 						name="start"
 						required
-						lang="nb"
-						inputmode="numeric"
-						placeholder="tt:mm"
-						autocomplete="off"
-						spellcheck="false"
-						pattern="(?:[01]\d|2[0-3]):[0-5]\d"
+						lang="nb-NO"
 						title="Klokkeslett med 24 timer, for eksempel 13:30"
 						bind:value={starts[index]}
-						oninput={(event) => {
-							const input = event.target;
-							if (input instanceof HTMLInputElement) commitClock(index, input);
-						}}
-						onblur={(event) => {
-							const input = event.target;
-							if (input instanceof HTMLInputElement) commitClock(index, input);
-						}}
 					/>
 				</label>
 				{#if isTime(starts[index])}

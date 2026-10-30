@@ -54,17 +54,6 @@ export function isTime(value: string) {
 	return /^(?:[01]\d|2[0-3]):[0-5]\d$/.test(value);
 }
 
-export function normalizeClock(value: string) {
-	const trimmed = value.trim().replace('.', ':');
-	const digits = /^(\d{3,4})$/.exec(trimmed);
-	const clock = digits ? `${digits[1].slice(0, -2)}:${digits[1].slice(-2)}` : trimmed;
-	const match = /^(\d{1,2}):(\d{2})$/.exec(clock);
-	if (!match) return trimmed;
-	const hour = Number(match[1]);
-	if (hour > 23 || Number(match[2]) > 59) return trimmed;
-	return `${String(hour).padStart(2, '0')}:${match[2]}`;
-}
-
 export function osloDayKey(date: Date) {
 	return dayKeyFormatter.format(date);
 }
