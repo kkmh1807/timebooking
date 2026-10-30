@@ -31,29 +31,22 @@ export async function sendBookingEmails(booking: BookingMail) {
 	const interval = formatInterval(booking.startsAt, booking.endsAt);
 	const when = `${date} kl. ${interval}`;
 
-	const customerLines = [
-		`Hei ${booking.customerName},`,
-		'',
-		`Timen din hos Jenny er booket:`,
-		when
-	];
+	const customerLines = [`Hei ${booking.customerName},`, '', `Timen din er booket.`, when];
 	if (booking.label) customerLines.push(`Stil / instruktør: ${booking.label}`);
 	customerLines.push(
 		'',
-		studio.kicker,
-		'Trenger du å avbestille, tar du kontakt med Jenny.',
+		'Trenger du å avbestille, ta kontakt direkte med meg.',
 		'',
-		'Vennlig hilsen',
+		'Vennlig hilsen,',
 		'Jenny Smestad'
 	);
 
 	const customerBody = [
 		`<p style="margin:0 0 1rem;font-size:16px;line-height:1.55;color:${colors.ink};">Hei ${escapeHtml(booking.customerName)},</p>`,
-		`<p style="margin:0 0 1.25rem;font-size:16px;line-height:1.55;color:${colors.ink};">Timen din hos Jenny er booket:</p>`,
+		`<p style="margin:0 0 1.25rem;font-size:16px;line-height:1.55;color:${colors.ink};">Timen din er booket.</p>`,
 		whenBlock(date, interval, booking.label),
-		`<p style="margin:1.25rem 0 0;font-size:14px;line-height:1.5;color:${colors.muted};">${escapeHtml(studio.kicker)}</p>`,
-		`<p style="margin:0.5rem 0 0;font-size:14px;line-height:1.5;color:${colors.muted};">Trenger du å avbestille, tar du kontakt med studioet.</p>`,
-		`<p style="margin:1.5rem 0 0;font-size:16px;line-height:1.55;color:${colors.ink};">Vennlig hilsen<br />Jenny Smestad</p>`
+		`<p style="margin:0.5rem 0 0;font-size:14px;line-height:1.5;color:${colors.muted};">Trenger du å avbestille, ta kontakt direkte med meg.</p>`,
+		`<p style="margin:1.5rem 0 0;font-size:16px;line-height:1.55;color:${colors.ink};">Vennlig hilsen,<br />Jenny Smestad</p>`
 	].join('');
 
 	const customerSent = await sendEmail(
