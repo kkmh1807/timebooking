@@ -37,6 +37,20 @@ const dayKeyFormatter = new Intl.DateTimeFormat('en-CA', {
 	day: '2-digit'
 });
 
+const priceFormatter = new Intl.NumberFormat('nb-NO');
+
+export function formatPrice(kr: number) {
+	return `kr ${priceFormatter.format(kr)}`;
+}
+
+export function parsePrice(value: string) {
+	const digits = value.trim().replace(/\s/g, '');
+	if (!/^\d+$/.test(digits)) return null;
+	const price = Number(digits);
+	if (price < 1 || price > 100_000) return null;
+	return price;
+}
+
 export function isDuration(value: number): value is DurationMinutes {
 	return (DURATIONS as readonly number[]).includes(value);
 }

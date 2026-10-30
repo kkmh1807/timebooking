@@ -14,7 +14,8 @@ export const slots = sqliteTable('slots', {
 	startsAt: integer('startsAt', { mode: 'timestamp_ms' }).notNull(),
 	endsAt: integer('endsAt', { mode: 'timestamp_ms' }).notNull(),
 	status: text('status', { enum: slotStatuses }).notNull().default('open'),
-	label: text('label')
+	label: text('label'),
+	priceKr: integer('priceKr')
 });
 
 export const bookings = sqliteTable(

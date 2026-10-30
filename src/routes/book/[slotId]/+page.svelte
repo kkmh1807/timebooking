@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 	import { studio } from '#lib/studio';
-	import { formatDuration, formatInterval, formatOsloDate } from '#lib/time';
+	import { formatDuration, formatInterval, formatOsloDate, formatPrice } from '#lib/time';
 	import type { PageProps } from './$types';
 
 	let { data, form }: PageProps = $props();
@@ -15,6 +15,9 @@
 <p class="lead">
 	{formatOsloDate(data.slot.startsAt)} kl. {formatInterval(data.slot.startsAt, data.slot.endsAt)}
 	<span class="muted">· {formatDuration(data.slot.startsAt, data.slot.endsAt)}</span>
+	{#if data.slot.priceKr != null}
+		<span class="muted">· {formatPrice(data.slot.priceKr)}</span>
+	{/if}
 </p>
 {#if data.slot.label}
 	<p>{data.slot.label}</p>

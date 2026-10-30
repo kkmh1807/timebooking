@@ -23,6 +23,7 @@ export async function createSlots(input: {
 	starts: string[];
 	durationMinutes: number;
 	label: string;
+	priceKr: number;
 }) {
 	const built = slotsAt(input.date, input.starts, input.durationMinutes);
 	if (!built) return { ok: false as const, message: 'Sjekk dato og klokkeslett.' };
@@ -59,6 +60,7 @@ export async function createSlots(input: {
 				startsAt: slot.startsAt,
 				endsAt: slot.endsAt,
 				label: input.label || null,
+				priceKr: input.priceKr,
 				status: 'open' as const
 			}))
 		);
@@ -89,6 +91,16 @@ export async function deleteSlot(id: string) {
 	if (booking) return { ok: false as const, message: 'Timen har en booking og kan ikke slettes.' };
 
 	await db.delete(slots).where(eq(slots.id, id));
+	return { ok: true as const };
+}
+
+export async function updateSlotPrice(id: string, priceKr: number) {
+	const [slot] = await db
+		.update(slots)
+		.set({ priceKr })
+		.where(eq(slots.id, id))
+		.returning({ id: slots.id });
+	if (!slot) return { ok: false as const, message: 'Fant ikke timen.' };
 	return { ok: true as const };
 }
 

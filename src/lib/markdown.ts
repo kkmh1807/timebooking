@@ -1,3 +1,32 @@
+export function parseTeaching(source: string) {
+	const blocks = source
+		.replaceAll('\r\n', '\n')
+		.replaceAll('\r', '\n')
+		.trim()
+		.split(/\n{2,}/)
+		.map((block) => block.trim())
+		.filter(Boolean);
+	const intro: string[] = [];
+	const points: { title: string; text: string }[] = [];
+	let current: { title: string; text: string } | null = null;
+
+	for (const block of blocks) {
+		const [first, ...rest] = block.split('\n');
+		if (first.startsWith('## ')) {
+			if (current) points.push(current);
+			current = { title: first.slice(3).trim(), text: rest.join('\n').trim() };
+			continue;
+		}
+		if (current) {
+			current.text = current.text ? `${current.text}\n\n${block}` : block;
+		} else {
+			intro.push(block);
+		}
+	}
+	if (current) points.push(current);
+	return { intro, points };
+}
+
 export function renderMarkdown(source: string) {
 	const escaped = escapeHtml(source.replaceAll('\r\n', '\n').replaceAll('\r', '\n').trim());
 	if (!escaped) return '';

@@ -7,11 +7,16 @@ const starterPages = [
 		slug: 'om',
 		title: 'Om undervisningen',
 		published: true,
-		body: `Undervisningen er privat: én til én, eller en liten gruppe som booker timen sammen.
+		body: `Jeg tilbyr privat danseundervisning i latin, tilpasset ditt nivå, dine mål og din stil. Timene kombinerer teknikk, musikalitet og danseglede – enten du er nybegynner eller ønsker å utvikle deg videre.
 
-Skriv gjerne ønsket stil og erfaring i merknadsfeltet når du booker.
+## Tilpasset ditt nivå
+Fra helt ny til viderekommen.
 
-Denne teksten kan endres av studioet.`
+## Teknikk og musikalitet
+Vi jobber med kroppskontroll, uttrykk og følelsen i dansen.
+
+## Latin stiler
+Rumba, samba, cha-cha, jive, paso doble og mer.`
 	},
 	{
 		slug: 'praktisk',

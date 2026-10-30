@@ -7,6 +7,7 @@
 		formatClockSpan,
 		formatInterval,
 		formatOsloDate,
+		formatPrice,
 		hasClockOverlap,
 		isDateKey,
 		isTime,
@@ -21,6 +22,7 @@
 
 	let date = $state(untrack(() => form?.date ?? ''));
 	let duration = $state(untrack(() => form?.duration ?? '60'));
+	let price = $state(untrack(() => form?.price ?? ''));
 	let starts = $state(
 		untrack(() => (form?.starts && form.starts.length > 0 ? [...form.starts] : ['10:00']))
 	);
@@ -74,6 +76,10 @@
 				<option value={String(minutes)}>{minutes} min</option>
 			{/each}
 		</select>
+	</label>
+	<label class="field">
+		<span>Pris per time (kr)</span>
+		<input name="price" type="number" inputmode="numeric" min="1" max="100000" step="1" required bind:value={price} />
 	</label>
 	<label class="field">
 		<span>Antall</span>
@@ -131,10 +137,28 @@
 						)}</span
 					>
 					<span class="muted">
-						{statusLabel[row.slot.status]}{#if row.slot.label}
+						{statusLabel[row.slot.status]}{#if row.slot.priceKr != null}
+							· {formatPrice(row.slot.priceKr)}{/if}{#if row.slot.label}
 							· {row.slot.label}{/if}
 					</span>
 				</div>
+				<form class="price-form" method="POST" action="?/price">
+					<input type="hidden" name="id" value={row.slot.id} />
+					<label>
+						<span class="muted">kr</span>
+						<input
+							name="price"
+							type="number"
+							inputmode="numeric"
+							min="1"
+							max="100000"
+							step="1"
+							required
+							value={row.slot.priceKr ?? ''}
+						/>
+					</label>
+					<button class="quiet" type="submit">Lagre</button>
+				</form>
 				{#if row.slot.status === 'cancelled' || (row.slot.status !== 'booked' && !row.hasBooking)}
 					<form method="POST" action="?/remove">
 						<input type="hidden" name="id" value={row.slot.id} />
@@ -145,3 +169,19 @@
 		{/each}
 	</ul>
 {/if}
+
+<style>
+	.price-form {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+	}
+
+	.price-form label {
+		margin: 0;
+	}
+
+	.price-form input {
+		width: 5.5rem;
+	}
+</style>

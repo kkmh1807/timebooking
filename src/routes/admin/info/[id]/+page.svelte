@@ -41,9 +41,14 @@
 	<label class="field">
 		<span>Tekst</span>
 		<textarea name="body" required>{form?.body ?? data.page.body}</textarea>
-		<small class="muted"
-			>Avsnitt skilles med en blank linje. ## for overskrift, - for punktliste.</small
-		>
+		<small class="muted">
+			{#if data.page.slug === 'om'}
+				Første avsnitt er innledningen. En linje som starter med ## blir et punkt med ikon, og
+				teksten under er forklaringen.
+			{:else}
+				Avsnitt skilles med en blank linje. ## for overskrift, - for punktliste.
+			{/if}
+		</small>
 		{#if form?.errors?.body}<small>{form.errors.body}</small>{/if}
 	</label>
 	<label>

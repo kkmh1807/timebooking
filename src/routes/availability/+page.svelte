@@ -1,42 +1,86 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import { resolve } from '$app/paths';
 	import { studio } from '#lib/studio';
-	import { formatInterval, formatOsloMonth, formatOsloWeekday, osloDayKey } from '#lib/time';
+	import {
+		formatDuration,
+		formatInterval,
+		formatOsloDate,
+		formatPrice,
+		osloDayKey,
+		zonedTimeToUtc
+	} from '#lib/time';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
-	let months = $derived(groupByMonth(data.slots));
 
-	function groupByMonth(slots: typeof data.slots) {
-		const grouped: {
-			key: string;
-			label: string;
-			days: { key: string; label: string; slots: typeof data.slots }[];
-		}[] = [];
+	const weekdays = ['Man', 'Tir', 'Ons', 'Tor', 'Fre', 'Lør', 'Søn'];
 
-		for (const slot of slots) {
-			const dayKey = osloDayKey(slot.startsAt);
-			const monthKey = dayKey.slice(0, 7);
-			let month = grouped.at(-1);
-			if (!month || month.key !== monthKey) {
-				month = { key: monthKey, label: formatOsloMonth(slot.startsAt), days: [] };
-				grouped.push(month);
-			}
-			const day = month.days.at(-1);
-			if (day && day.key === dayKey) day.slots.push(slot);
-			else month.days.push({ key: dayKey, label: formatOsloWeekday(slot.startsAt), slots: [slot] });
+	function initialDay() {
+		const slot = data.slots[0];
+		return slot ? osloDayKey(slot.startsAt) : osloDayKey(new Date());
+	}
+
+	let selectedKey = $state(untrack(initialDay));
+	let monthKey = $state(untrack(() => initialDay().slice(0, 7)));
+
+	let openDays = $derived(new Set(data.slots.map((slot) => osloDayKey(slot.startsAt))));
+	let selectedSlots = $derived(
+		data.slots.filter((slot) => osloDayKey(slot.startsAt) === selectedKey)
+	);
+	let cells = $derived(monthCells(monthKey));
+	let monthLabel = $derived(
+		new Intl.DateTimeFormat('nb-NO', {
+			timeZone: studio.timezone,
+			month: 'long',
+			year: 'numeric'
+		}).format(zonedTimeToUtc(`${monthKey}-01`, '12:00'))
+	);
+
+	function weekdayMonday(dayKey: string) {
+		const label = new Intl.DateTimeFormat('en-GB', {
+			timeZone: studio.timezone,
+			weekday: 'short'
+		}).format(zonedTimeToUtc(dayKey, '12:00'));
+		const index = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].indexOf(label);
+		return index === -1 ? 0 : index;
+	}
+
+	function monthCells(key: string) {
+		const [year, month] = key.split('-').map(Number);
+		const count = new Date(Date.UTC(year, month, 0)).getUTCDate();
+		const cells: Array<string | null> = Array.from(
+			{ length: weekdayMonday(`${key}-01`) },
+			() => null
+		);
+		for (let day = 1; day <= count; day += 1) {
+			cells.push(`${key}-${String(day).padStart(2, '0')}`);
 		}
+		return cells;
+	}
 
-		return grouped;
+	function shiftMonth(delta: number) {
+		const [year, month] = monthKey.split('-').map(Number);
+		const next = new Date(Date.UTC(year, month - 1 + delta, 1));
+		const key = `${next.getUTCFullYear()}-${String(next.getUTCMonth() + 1).padStart(2, '0')}`;
+		monthKey = key;
+		const available = data.slots.find((slot) => osloDayKey(slot.startsAt).startsWith(key));
+		if (available) selectedKey = osloDayKey(available.startsAt);
+	}
+
+	function chooseDay(dayKey: string) {
+		selectedKey = dayKey;
 	}
 </script>
 
 <svelte:head>
-	<title>Ledige timer – {studio.name}</title>
+	<title>Booking – {studio.name}</title>
 </svelte:head>
 
-<h1>Ledige timer</h1>
-<p class="lead">Velg dato og klokkeslett.</p>
+<h1>Velg din dansetime</h1>
+<p class="lead">
+	Finn et tidspunkt som passer deg. Alle timer er private, én til én eller i liten gruppe.
+</p>
 
 {#if data.labels.length > 0}
 	<form method="GET" class="actions">
@@ -53,92 +97,160 @@
 	</form>
 {/if}
 
-{#if months.length === 0}
-	<p>Ingen ledige timer{data.label ? ' som passer filteret' : ''}.</p>
-{:else}
-	{#each months as month (month.key)}
-		<section class="month">
-			<h2>{month.label}</h2>
-			<ul class="schedule">
-				{#each month.days as day (day.key)}
-					<li class="day-row">
-						<h3>{day.label}</h3>
-						<ul class="times">
-							{#each day.slots as slot (slot.id)}
-								<li>
-									<a href={resolve('/book/[slotId]', { slotId: slot.id })}>
-										<time datetime={slot.startsAt.toISOString()}
-											>{formatInterval(slot.startsAt, slot.endsAt)}</time
-										>
-										{#if slot.label}<span class="muted">{slot.label}</span>{/if}
-									</a>
-								</li>
-							{/each}
-						</ul>
-					</li>
-				{/each}
-			</ul>
-		</section>
-	{/each}
-{/if}
+<div class="calendar">
+		<div class="month-bar">
+			<button class="quiet" type="button" onclick={() => shiftMonth(-1)} aria-label="Forrige måned"
+				>‹</button
+			>
+			<p>{monthLabel}</p>
+			<button class="quiet" type="button" onclick={() => shiftMonth(1)} aria-label="Neste måned"
+				>›</button
+			>
+		</div>
+		<div class="weekdays" aria-hidden="true">
+			{#each weekdays as day (day)}<span>{day}</span>{/each}
+		</div>
+		<div class="days" role="grid" aria-label={monthLabel}>
+			{#each cells as cell, index (cell ?? `empty-${index}`)}
+				{#if cell}
+					<button
+						type="button"
+						class={{ selected: cell === selectedKey, open: openDays.has(cell) }}
+						aria-current={cell === selectedKey ? 'date' : undefined}
+						aria-label={formatOsloDate(zonedTimeToUtc(cell, '12:00'))}
+						onclick={() => chooseDay(cell)}>{Number(cell.slice(-2))}</button
+					>
+				{:else}
+					<span class="empty"></span>
+				{/if}
+			{/each}
+		</div>
+	</div>
+
+	{#if selectedSlots.length > 0}
+		<h2>{formatOsloDate(zonedTimeToUtc(selectedKey, '12:00'))}</h2>
+		<ul class="slot-list">
+			{#each selectedSlots as slot (slot.id)}
+				<li class="slot">
+					<div class="stack">
+						<time datetime={slot.startsAt.toISOString()}
+							>{formatInterval(slot.startsAt, slot.endsAt)}</time
+						>
+						<span class="muted">
+							{formatDuration(slot.startsAt, slot.endsAt)}{#if slot.label}
+								· {slot.label}{/if}
+						</span>
+						{#if slot.priceKr != null}
+							<span class="price">{formatPrice(slot.priceKr)}</span>
+						{/if}
+					</div>
+					<a class="button" href={resolve('/book/[slotId]', { slotId: slot.id })}>Book</a>
+				</li>
+			{/each}
+		</ul>
+	{:else}
+		<p>Ingen ledige timer på valgt dag</p>
+	{/if}
+
+	<p class="note">Avbestilling gjøres av studioet. Ta kontakt hvis du ikke kan komme.</p>
 
 <style>
-	.month h2 {
-		margin: 2rem 0 0.35rem;
-		font-size: 1.6rem;
+	.calendar {
+		margin-top: 0.5rem;
 	}
 
-	.schedule {
-		margin: 0;
-		padding: 0;
-		list-style: none;
-	}
-
-	.day-row {
+	.month-bar {
 		display: grid;
-		grid-template-columns: 9.5rem 1fr;
-		gap: 0.35rem 1.25rem;
-		align-items: baseline;
-		padding: 0.9rem 0;
-		border-top: 1px solid var(--line);
+		grid-template-columns: 2.5rem 1fr 2.5rem;
+		align-items: center;
 	}
 
-	.day-row h3 {
+	.month-bar p {
 		margin: 0;
-		font-size: 1.35rem;
+		color: var(--accent);
+		font-size: 0.78rem;
+		letter-spacing: 0.16em;
+		text-align: center;
+		text-transform: uppercase;
 	}
 
-	.times {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 0.45rem 1.15rem;
-		margin: 0;
+	.month-bar button {
+		padding: 0.4rem;
+		background: transparent;
+		color: var(--accent);
+		border: 0;
+		font-size: 1.4rem;
+		letter-spacing: 0;
+	}
+
+	.weekdays,
+	.days {
+		display: grid;
+		grid-template-columns: repeat(7, 1fr);
+	}
+
+	.weekdays span {
+		padding: 0.85rem 0 0.4rem;
+		color: var(--muted);
+		font-size: 0.68rem;
+		letter-spacing: 0.08em;
+		text-align: center;
+		text-transform: uppercase;
+	}
+
+	.days button,
+	.days span {
+		display: grid;
+		place-items: center;
+		height: 2.4rem;
+		margin: 0.15rem auto;
 		padding: 0;
-		list-style: none;
+		background: transparent;
+		color: var(--muted);
+		border: 0;
+		font-size: 0.95rem;
+		letter-spacing: 0;
+		text-transform: none;
 	}
 
-	.times a {
-		display: flex;
-		flex-direction: column;
-		color: inherit;
-		text-decoration: none;
-		font-variant-numeric: tabular-nums;
+	.days button {
+		position: relative;
+		width: 2.4rem;
+		color: var(--ink);
+		cursor: pointer;
 	}
 
-	.times a:hover time,
-	.times a:focus-visible time {
-		text-decoration: underline;
-		text-underline-offset: 0.18em;
+	.days button.open:not(.selected) {
+		color: var(--accent);
+		font-weight: 600;
+		border-radius: 50%;
+		box-shadow: inset 0 0 0 1.5px var(--accent);
 	}
 
-	.times .muted {
-		font-size: 0.85rem;
+	.days button.selected {
+		background: var(--accent);
+		color: var(--accent-ink);
+		border-radius: 50%;
 	}
 
-	@media (max-width: 36rem) {
-		.day-row {
-			grid-template-columns: 1fr;
-			gap: 0.15rem;
-		}
+	.days span.empty {
+		visibility: hidden;
+	}
+
+	h2 {
+		margin-top: 1.6rem;
+		font-size: 1.7rem;
+	}
+
+	.price {
+		color: var(--accent);
+		font-size: 1.05rem;
+		white-space: nowrap;
+	}
+
+	.note {
+		margin-top: 1.5rem;
+		color: var(--muted);
+		font-size: 0.92rem;
 	}
 </style>
